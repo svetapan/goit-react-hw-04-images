@@ -2,17 +2,21 @@ import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import css from './Modal.module.css';
 
-export default function Modal(onClose, selectedItem) {
+export default function Modal({onClose, selectedItem}) {
   useEffect(() => {
-    document.addEventListener('keydown', handleESC);
-    document.removeEventListener('keydown', handleESC);
-  });
+    const handleESC = e => {
+      if (e.code === 'Escape') {
+        onClose();
+      }
+    };
 
-  const handleESC = e => {
-    if (e.code === 'Escape') {
-      onClose();
+    document.addEventListener('keydown', handleESC);
+
+    return () => {
+      document.removeEventListener('keydown', handleESC);
     }
-  };
+  }, [onClose]);
+
 
   return (
     <div className={css.overlay} onClick={onClose}>
@@ -25,8 +29,8 @@ export default function Modal(onClose, selectedItem) {
 
 Modal.propTypes = {
   onClose: PropTypes.func,
-  onClick: PropTypes.func,
-  selectedItem: PropTypes.func,
-  tags: PropTypes.string,
-  largeImageURL: PropTypes.string,
+   selectedItem: PropTypes.shape({
+    largeImageURL: PropTypes.string,
+    tags: PropTypes.string,
+  }),
 };
