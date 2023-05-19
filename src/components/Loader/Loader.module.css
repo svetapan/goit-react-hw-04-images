@@ -1,0 +1,21 @@
+.load {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.icon {
+    animation: spin 1s infinite;
+    font-size: 20px;
+
+}
+
+@keyframes spin {
+    0% {
+        rotate: 0;
+    }
+    100% {
+        rotate: 360deg;
+    }
+}
