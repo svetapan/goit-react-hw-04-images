@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import getImages from '../../services/getImages';
 import css from './ImageGallery.module.css';
@@ -6,110 +6,102 @@ import ImageGalleryItem from '../ImageGalleryItem/ImageGalleryItem';
 import Loader from '../Loader/Loader';
 import Button from '../Button/Button';
 
-class ImageGallery extends Component {
-  state = {
-    images: null,
-    error: null,
-    status: 'idle',
-    loadedImagesCount: 0,
-    step: 12,
-    showButton: false,
-  };
+export default function ImageGallery( {searchValue}) {
+  const [images, setImages] = useState(null);
+  const [status, setStatus] = useState('idle');
+  const [loadedImagesCount, setLoadedImagesCount] = useState(0);
+  const [step] = useState(12);
+  const [showButton, setShowButton] = useState(false);
+  
+  useEffect(() => {
+      if (searchValue) {
+        setStatus('pending');
+        setLoadedImagesCount(1);
+        setShowButton(false);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevProps.searchValue !== this.props.searchValue) {
-      this.setState({
-        status: 'pending',
-        loadedImagesCount: 1,
-        showButton: false,
-      });
-      getImages(this.props.searchValue)
-        .then(response => {
-          if (response.totalHits > 0) {
-            return response;
-          } else {
-            throw new Error('No images found');
-          }
-        })
-        .then(images => {
-          this.setState({ images, status: 'resolved', showButton: true });
-        })
-        .catch(error => {
-          this.setState({ error, status: 'rejected', images: null });
-          console.error('error:', error);
-        });
-    }
-  }
+        getImages(searchValue)
+          .then(response => {
+            if (response.totalHits > 0) {
+              return response;
+            } else {
+              throw new Error('No images found');
+            }
+          })
+          .then(images => {
+            setImages(images);
+            setStatus('resolved');
+            setShowButton(true);
+          })
+          .catch(error => {
+            setStatus('rejected');
+            setImages(null);
+            console.error('error:', error);
+          });
+      }
+    },
+    [searchValue]
+  );
 
-  loadMoreImages = () => {
-    const { searchValue } = this.props;
-    const { loadedImagesCount, images } = this.state;
+  const loadMoreImages = () => {
     let newLoadedImagesCount = loadedImagesCount + 1;
 
     if (newLoadedImagesCount >= images.totalHits) {
-      this.setState({ showButton: false });
+      setShowButton(false);
       return;
     }
 
-    getImages(searchValue, newLoadedImagesCount, this.state.step)
+    getImages(searchValue, newLoadedImagesCount, step)
       .then(newImage => {
         const allImages = [...images.hits, ...newImage.hits];
         const totalImagesCount = newImage.totalHits;
 
-        this.setState({
-          images: { ...images, hits: allImages },
-          loadedImagesCount: newLoadedImagesCount,
-          showButton: allImages.length < totalImagesCount,
-        });
+        setImages({ ...images, hits: allImages });
+        setLoadedImagesCount(newLoadedImagesCount);
+        setShowButton(allImages.length < totalImagesCount);
       })
       .catch(error => {
         console.error('error', error);
       });
   };
 
-  render() {
-    const { status, images, showButton, loadedImagesCount } = this.state;
+  if (status === 'idle') {
+    return <p style={{ textAlign: 'center' }}>Please enter search word</p>;
+  }
 
-    if (status === 'idle') {
-      return <p style={{ textAlign: 'center' }}>Please enter search word</p>;
-    }
+  if (status === 'pending') {
+    return <Loader />;
+  }
 
-    if (status === 'pending') {
-      return <Loader />;
-    }
+  if (status === 'rejected') {
+    return (
+      <h1 style={{ textAlign: 'center' }}>
+        Error! Not found any image. Please try again.
+      </h1>
+    );
+  }
 
-    if (status === 'rejected') {
-      return (
-        <h1 style={{ textAlign: 'center' }}>
-          Error! Not found any image. Please try again.
-        </h1>
-      );
-    }
-
-    if (status === 'resolved') {
-      return (
-        <>
-          <ul className={css.gallery}>
-            <ImageGalleryItem items={images.hits} />
-          </ul>
-          {loadedImagesCount < images.totalHits && showButton && (
-            <Button onClick={this.loadMoreImages} />
-          )}
-        </>
-      );
-    }
+  if (status === 'resolved') {
+    return (
+      <>
+        <ul className={css.gallery}>
+          <ImageGalleryItem items={images.hits} />
+        </ul>
+        {loadedImagesCount < images.totalHits && showButton && (
+          <Button onClick={loadMoreImages} />
+        )}
+      </>
+    );
   }
 }
 
-export default ImageGallery;
-
-ImageGallery.proptype = {
+ImageGallery.propTypes = {
+  searchValue: PropTypes.string,
   images: PropTypes.object,
   error: PropTypes.bool,
   status: PropTypes.string,
   loadedImagesCount: PropTypes.number,
   step: PropTypes.number,
   showButton: PropTypes.bool,
-  onClick:  PropTypes.func,
-  items: PropTypes.object
-}
+  onClick: PropTypes.func,
+  items: PropTypes.object,
+};

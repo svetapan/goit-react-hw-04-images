@@ -1,41 +1,32 @@
-import { Component } from 'react';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import css from './Modal.module.css';
 
-class Modal extends Component {
-  componentDidMount() {
-    document.addEventListener('keydown', this.handleESC);
-  }
+export default function Modal(onClose, selectedItem) {
+  useEffect(() => {
+    document.addEventListener('keydown', handleESC);
+    document.removeEventListener('keydown', handleESC);
+  });
 
-  componentWillUnmount() {
-    document.removeEventListener('keydown', this.handleESC);
-  }
-
-  handleESC = e => {
+  const handleESC = e => {
     if (e.code === 'Escape') {
-      this.props.onClose();
+      onClose();
     }
   };
 
-  render() {
-    const { onClose, selectedItem } = this.props;
-
-    return (
-      <div className={css.overlay} onClick={onClose}>
-        <div className={css.modal} onClick={e => e.stopPropagation()}>
-          <img src={selectedItem.largeImageURL} alt={selectedItem.tags} />
-        </div>
+  return (
+    <div className={css.overlay} onClick={onClose}>
+      <div className={css.modal} onClick={e => e.stopPropagation()}>
+        <img src={selectedItem.largeImageURL} alt={selectedItem.tags} />
       </div>
-    );
-  }
+    </div>
+  );
 }
 
-export default Modal;
-
-Modal.proptype = {
-  onClose:  PropTypes.func,
-  onClick:  PropTypes.func,
-  selectedItem:  PropTypes.func,
+Modal.propTypes = {
+  onClose: PropTypes.func,
+  onClick: PropTypes.func,
+  selectedItem: PropTypes.func,
   tags: PropTypes.string,
-  largeImageURL:  PropTypes.string,
-}
+  largeImageURL: PropTypes.string,
+};
